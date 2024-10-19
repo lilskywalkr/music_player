@@ -1,0 +1,64 @@
+version: '3.8'
+services:
+  frontend: 
+    build: ./frontend
+    container_name: player_front
+    ports:
+      - '5173:5173'
+    volumes:
+      - ./frontend:/app  # This mounts the project directory
+      - /app/node_modules  # This ensures `node_modules` is isolated in the container
+    stdin_open: true  # Keeping stdin open to avoid container exit
+    tty: true
+
+  backend:
+    build: ./backend
+    container_name: player_back
+    ports:
+      - '3500:3500'
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    stdin_open: true
+    tty: true
+    environment:
+      - CHOKIDAR_USEPOLLING=true 
+
+  api:
+    build: ./api
+    container_name: player_api
+    ports:
+      - '4000:4000'
+    volumes:
+      - ./api:/app
+      - /app/node_modules
+    stdin_open: true
+    tty: true
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+
+  db:
+    image: mysql:latest
+    container_name: mysql_db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: music_player
+    ports:
+      - '3306:3306'
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d  # For SQL initialization scripts
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: phpmyadmin
+    environment:
+      PMA_HOST: db  # Points to the MySQL service
+      PMA_USER: root
+      PMA_PASSWORD: root
+      MAX_EXECUTION_TIME: 300
+      MEMORY_LIMIT: 512M
+      UPLOAD_LIMIT: 256M
+    ports:
+      - '8080:80'  # Access phpMyAdmin at http://localhost:8080
+    depends_on:
+      - db  # Wait for the database to be ready
